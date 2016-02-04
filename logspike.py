@@ -2,10 +2,20 @@
 
 import sys, os, socket, time, re
 
+#Contains the encode and decode methods
+import crypto
+
 #Has the configurable parameters
 from config import *
 
+#Has the patterns and replace token positions
+from patterns import match_patterns
+
+#Compiled patterns with token position
 compiled_patterns = list()
+
+#Key is loaded from a file which is defined in the config
+cipher_key = None
 
 def match(message):
     for pattern in compiled_patterns:
@@ -13,15 +23,13 @@ def match(message):
         if matched:
             pass
 
-
-def encrypt_token(input_token):
-    pass
-
 def compile_patterns:
-    for pattern in match_patterns:
+    #This gets the pattern to match, and the token position (in regex groups)
+    #to obfuscate
+    for pattern, token_pos in match_patterns:
         #Compile the pattern and add it to the list
-        compiled_patterns.append(re.compile(pattern))
-
+        pattern_tuple = (re.compile(pattern), token_pos)
+        compiled_patterns.append(pattern_tuple)
 
 def main():
     #Input TCP socket
@@ -49,8 +57,9 @@ def main():
         time.sleep(0.05)
         processed_message = message + " -- processed"
         out_socket.sendto(processed_message,out_socket_address)
-        #out_file.flush()
 
 if __name__ == "__main__":
+    with open(keyfile,'r') as f:
+        cipher_key = f.read()
     compile_patterns()
     main()
