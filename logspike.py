@@ -17,18 +17,28 @@ compiled_patterns = list()
 #Key is loaded from a file which is defined in the config
 cipher_key = None
 
-def match(message):
-    for pattern in compiled_patterns:
+#Look for a pattern match, if matched find the token we want to replace and
+#encode it. Reconstruct the message and return.
+def replace(message):
+    for pattern, token_pos in compiled_patterns:
         matched = pattern.match(message)
         if matched:
-            pass
+            rebuilt_string = ""
+            for index, token in enumerate(matched.groups()):
+                rebuilt_string += token
+                if index == token_pos:
+                    rebuilt_string += crypto.encode(cipher_key, token)
+        else:
+            return message
 
-def compile_patterns:
+def compile_patterns():
     #This gets the pattern to match, and the token position (in regex groups)
     #to obfuscate
     for pattern, token_pos in match_patterns:
         #Compile the pattern and add it to the list
-        pattern_tuple = (re.compile(pattern), token_pos)
+        print (pattern)
+        compiled_pattern = re.compile(pattern)
+        pattern_tuple = (compiled_pattern, token_pos)
         compiled_patterns.append(pattern_tuple)
 
 def main():
@@ -53,10 +63,8 @@ def main():
 
     while True:
         message = conn.recv(buffer_size)
-        print("Processing message: " + message)
-        time.sleep(0.05)
-        processed_message = message + " -- processed"
-        out_socket.sendto(processed_message,out_socket_address)
+        output_message = replace(message)
+        out_socket.sendto(output_message,out_socket_address)
 
 if __name__ == "__main__":
     with open(keyfile,'r') as f:

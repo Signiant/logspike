@@ -23,7 +23,7 @@ match_patterns = [
     ("^(.*)(Closing\s)(.*)", 3),
     ("^(.*)(BaseRestRequest: Attempt [0-9]* for\s)(.*)(\ssuccessfully handled response)", 3),
     ("^(.*)(Completed\s)(.*)", 3),
-    ("^(.*)(of part [0-9]*\sof\s)(.*)(\scompleted without errors\.", 3),
+    ("^(.*)(of part [0-9]*\sof\s)(.*)(\scompleted without errors\.)", 3),
     ("^(.*)(Sent DE_FILE_COMPLETE\([0-9]*\)\s)(.*)", 3),
     ("^(.*)(Receive rate for\s)(.*)(\s= [0-9].* .bps.)", 3),
     ("^(.*)(Retrying file \')(.*)(' \([0-9].*\))", 3),
