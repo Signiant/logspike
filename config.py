@@ -11,6 +11,7 @@ out_socket_address = "/tmp/logspike"
 buffer_size = 1024
 
 #Ensure there are NO space characters in the key
+#Cannot be longer than 32 bytes
 keyfile_name = "cipher_key"
 
 #Gets the keyfile from the same directory as this file

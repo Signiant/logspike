@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, socket, time, re
+import sys, os, socket, time, re, selects
 
 #Contains the encode and decode methods
 import crypto
@@ -25,9 +25,11 @@ def replace(message):
         if matched:
             rebuilt_string = ""
             for index, token in enumerate(matched.groups()):
-                rebuilt_string += token
                 if index == token_pos:
                     rebuilt_string += crypto.encode(cipher_key, token)
+                else:
+                    rebuilt_string += token
+            return rebuilt_string
         else:
             return message
 
@@ -59,12 +61,46 @@ def main():
 
     print ("Listening...")
 
-    conn, addr = in_socket.accept()
-
     while True:
-        message = conn.recv(buffer_size)
-        output_message = replace(message)
-        out_socket.sendto(output_message,out_socket_address)
+        #Accept incoming connection
+        conn, addr = in_socket.accept()
+
+        #Create blank buffer
+        input_buffer = ""
+
+        #Receive data
+        while True:
+            try:
+                #Test connection
+                ready_to_read, ready_to_write, in_error = \
+                    select.select([conn,], [conn,], [], 5)
+            except select.error:
+                #Close connection on failure detection, and return to outer loop
+                conn.shutdown(2)    # 0 = done receiving, 1 = done sending, 2 = both
+                conn.close()
+                print("Client closed connection.\nListening...")
+                break
+
+            #Append to the buffer
+            input_buffer += conn.recv(buffer_size)
+
+            #Split the buffer into lines (keeping line breaks)
+            lines = input_buffer.splitlines(True)
+
+            #Iterate through the lines
+            for line in lines:
+                #If this line doesn't end with a new line, then we should assume
+                #that it's incomplete, and we append it to the buffer again
+                if not line.endswith("\n"):
+                    input_buffer = line
+                    print "Incomplete line, putting back in buffer"
+                    continue
+                #Otherwise, search for tokens to replace with encoded values
+                output_message = replace(line)
+                print("output message: " + output_message)
+                #Send to output socket
+                out_socket.sendto(output_message,out_socket_address)
+            input_buffer = ""
 
 if __name__ == "__main__":
     with open(keyfile,'r') as f:
