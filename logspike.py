@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, socket, time, re, selects
+import sys, os, socket, time, re, select
 
 #Contains the encode and decode methods
 import crypto
@@ -15,18 +15,20 @@ from patterns import match_patterns
 compiled_patterns = list()
 
 #Key is loaded from a file which is defined in the config
-cipher_key = None
+#cipher_key = None
 
 #Look for a pattern match, if matched find the token we want to replace and
 #encode it. Reconstruct the message and return.
 def replace(message):
     for pattern, token_pos in compiled_patterns:
+        print "incoming message: " + message
         matched = pattern.match(message)
         if matched:
+            print "\n\nmatches!!\n\n"
             rebuilt_string = ""
             for index, token in enumerate(matched.groups()):
                 if index == token_pos:
-                    rebuilt_string += crypto.encode(cipher_key, token)
+                    rebuilt_string += crypto.encode(token)
                 else:
                     rebuilt_string += token
             return rebuilt_string
@@ -36,9 +38,10 @@ def replace(message):
 def compile_patterns():
     #This gets the pattern to match, and the token position (in regex groups)
     #to obfuscate
+    print("Searching for the following patterns:")
     for pattern, token_pos in match_patterns:
         #Compile the pattern and add it to the list
-        print (pattern)
+        print (pattern + " @ position: " + str(token_pos))
         compiled_pattern = re.compile(pattern)
         pattern_tuple = (compiled_pattern, token_pos)
         compiled_patterns.append(pattern_tuple)
@@ -59,30 +62,40 @@ def main():
     #Listen and allow no backlog of connections (refuse any more than the current)
     in_socket.listen(0)
 
-    print ("Listening...")
-
     while True:
+        print ("Listening...")
+
         #Accept incoming connection
         conn, addr = in_socket.accept()
+
+        #Don't allow socket to block
+        conn.setblocking(0)
 
         #Create blank buffer
         input_buffer = ""
 
         #Receive data
         while True:
-            try:
-                #Test connection
-                ready_to_read, ready_to_write, in_error = \
-                    select.select([conn,], [conn,], [], 5)
-            except select.error:
-                #Close connection on failure detection, and return to outer loop
-                conn.shutdown(2)    # 0 = done receiving, 1 = done sending, 2 = both
-                conn.close()
-                print("Client closed connection.\nListening...")
+
+            #Set the timeout for receiving log messages
+            ready = select.select([conn], [], [], connection_timeout)
+
+            #If we're not ready to read, or in error
+            if not ready[0] or ready[2]:
+                print "Lost connection to client"
                 break
+
+            #Flag to know if we need to clear the buffer or not
+            clear_buffer = True
+
+            #Flag to know if the
+            close_connection = True
 
             #Append to the buffer
             input_buffer += conn.recv(buffer_size)
+
+            if not input_buffer:
+                continue
 
             #Split the buffer into lines (keeping line breaks)
             lines = input_buffer.splitlines(True)
@@ -90,20 +103,23 @@ def main():
             #Iterate through the lines
             for line in lines:
                 #If this line doesn't end with a new line, then we should assume
-                #that it's incomplete, and we append it to the buffer again
+                #that it's incomplete, and we add it to the buffer again
                 if not line.endswith("\n"):
                     input_buffer = line
                     print "Incomplete line, putting back in buffer"
+                    input_buffer = line
+                    clear_buffer = False
                     continue
                 #Otherwise, search for tokens to replace with encoded values
-                output_message = replace(line)
+                output_message = replace(line).strip()
                 print("output message: " + output_message)
                 #Send to output socket
                 out_socket.sendto(output_message,out_socket_address)
-            input_buffer = ""
+            if clear_buffer:
+                input_buffer = ""
 
 if __name__ == "__main__":
-    with open(keyfile,'r') as f:
-        cipher_key = f.read()
+    #with open(keyfile,'r') as f:
+    #    cipher_key = f.read()
     compile_patterns()
     main()
