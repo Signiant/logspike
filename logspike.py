@@ -22,20 +22,21 @@ compiled_patterns = list()
 def replace(message):
     for pattern, token_pos in compiled_patterns:
         print "incoming message: " + message
-        matched = pattern.match(message)
-        if matched:
-            rebuilt_string = ""
-            #print "\n\nmatches!!\n\n"
-            token = matched.group(token_pos)
-            sub_token = crypto.encode(token)
-            for index, group in enumerate(matched.groups()):
-                #print "index: " + str(index)
-                #print "group: " + str(group)
-                if index == token_pos:
-                    rebuilt_string += sub_token
-                    continue
-                rebuilt_string += group
-            return rebuilt_string
+        matches = pattern.findall(message)
+        if matches and len(matches) > 0:
+            for matched in matches:
+                rebuilt_string = ""
+                print "\n\nmatches!!\n\n"
+                token = matched[token_pos]
+                sub_token = crypto.encode(token)
+                for index, group in enumerate(matched):
+                    print "index: " + str(index)
+                    print "group: " + str(group)
+                    if index == token_pos:
+                        rebuilt_string += sub_token
+                        continue
+                    rebuilt_string += group
+                return rebuilt_string
         else:
             return message
 
@@ -46,7 +47,7 @@ def compile_patterns():
     for pattern, token_pos in match_patterns:
         #Compile the pattern and add it to the list
         print (pattern + " @ position: " + str(token_pos))
-        compiled_pattern = re.compile(pattern)
+        compiled_pattern = re.compile(pattern, flags=(re.DOTALL | re.MULTILINE))
         pattern_tuple = (compiled_pattern, token_pos)
         compiled_patterns.append(pattern_tuple)
 
