@@ -3,7 +3,6 @@ import hashlib
 def encode(plaintext):
   sha1 = hashlib.sha1()
   sha1.update(plaintext)
-  print "digest: " + str(sha1.hexdigest)
   return sha1.hexdigest()
 
 ###

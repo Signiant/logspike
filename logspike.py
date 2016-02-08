@@ -24,13 +24,17 @@ def replace(message):
         print "incoming message: " + message
         matched = pattern.match(message)
         if matched:
-            print "\n\nmatches!!\n\n"
             rebuilt_string = ""
-            for index, token in enumerate(matched.groups()):
+            #print "\n\nmatches!!\n\n"
+            token = matched.group(token_pos)
+            sub_token = crypto.encode(token)
+            for index, group in enumerate(matched.groups()):
+                #print "index: " + str(index)
+                #print "group: " + str(group)
                 if index == token_pos:
-                    rebuilt_string += crypto.encode(token)
-                else:
-                    rebuilt_string += token
+                    rebuilt_string += sub_token
+                    continue
+                rebuilt_string += group
             return rebuilt_string
         else:
             return message
