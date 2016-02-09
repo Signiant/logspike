@@ -17,5 +17,5 @@ keyfile_name = "cipher_key"
 #Gets the keyfile from the same directory as this file
 keyfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),keyfile_name)
 
-#Connection timeout in seconds
-connection_timeout = 60
+#Connection timeout in seconds (3 days)
+connection_timeout = 259200

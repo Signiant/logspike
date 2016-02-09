@@ -21,24 +21,19 @@ compiled_patterns = list()
 #encode it. Reconstruct the message and return.
 def replace(message):
     for pattern, token_pos in compiled_patterns:
-        print "incoming message: " + message
-        matches = pattern.findall(message)
-        if matches and len(matches) > 0:
-            for matched in matches:
-                rebuilt_string = ""
-                print "\n\nmatches!!\n\n"
-                token = matched[token_pos]
-                sub_token = crypto.encode(token)
-                for index, group in enumerate(matched):
-                    print "index: " + str(index)
-                    print "group: " + str(group)
-                    if index == token_pos:
-                        rebuilt_string += sub_token
-                        continue
-                    rebuilt_string += group
-                return rebuilt_string
-        else:
-            return message
+        matched = pattern.match(message)
+        if matched:
+            rebuilt_string = ""
+            token = matched.group(token_pos)
+            sub_token = crypto.encode(token)
+            for index, group in enumerate(matched.groups()):
+                if index == token_pos:
+                    rebuilt_string += sub_token
+                    continue
+                rebuilt_string += group
+            return rebuilt_string
+    #If none of the patterns match, return the original message
+    return message
 
 def compile_patterns():
     #This gets the pattern to match, and the token position (in regex groups)
@@ -47,7 +42,7 @@ def compile_patterns():
     for pattern, token_pos in match_patterns:
         #Compile the pattern and add it to the list
         print (pattern + " @ position: " + str(token_pos))
-        compiled_pattern = re.compile(pattern, flags=(re.DOTALL | re.MULTILINE))
+        compiled_pattern = re.compile(pattern, flags=(re.I | re.M))
         pattern_tuple = (compiled_pattern, token_pos)
         compiled_patterns.append(pattern_tuple)
 
@@ -108,16 +103,13 @@ def main():
             #Iterate through the lines
             for line in lines:
                 #If this line doesn't end with a new line, then we should assume
-                #that it's incomplete, and we add it to the buffer again
+                #that it's incomplete, and we add it to the beginning of the buffer
                 if not line.endswith("\n"):
-                    input_buffer = line
-                    print "Incomplete line, putting back in buffer"
                     input_buffer = line
                     clear_buffer = False
                     continue
                 #Otherwise, search for tokens to replace with encoded values
                 output_message = replace(line).strip()
-                print("output message: " + output_message)
                 #Send to output socket
                 out_socket.sendto(output_message,out_socket_address)
             if clear_buffer:
