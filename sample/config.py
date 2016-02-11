@@ -8,7 +8,7 @@ in_socket_port = 22222
 out_socket_address = "/tmp/logspike"
 
 #Increase or decrease for the predicted max message size
-buffer_size = 1024
+buffer_size = 2048
 
 #Ensure there are NO space characters in the key
 #Cannot be longer than 32 bytes

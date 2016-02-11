@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import syslog
+
 import sys, os, socket, time, re, select
 
 #Contains the encode and decode methods
@@ -25,7 +27,9 @@ def replace(message):
         if matched:
             rebuilt_string = ""
             token = matched.group(token_pos)
-            sub_token = crypto.encode(token)
+            syslog.syslog("Input token: \t" + str(token.strip()))
+            sub_token = crypto.encode(token.strip())
+            syslog.syslog("Output token:\t" + str(sub_token))
             for index, group in enumerate(matched.groups()):
                 if index == token_pos:
                     rebuilt_string += sub_token
@@ -63,6 +67,10 @@ def main():
     in_socket.listen(0)
 
     while True:
+        #Sleep for two seconds just in case we get into a loop. Don't want to
+        #tie up resources
+        time.sleep(2)
+
         print ("Listening...")
 
         #Accept incoming connection
