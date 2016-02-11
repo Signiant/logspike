@@ -26,7 +26,7 @@ def replace(message):
         matched = pattern.match(message)
         if matched:
             rebuilt_string = ""
-            token = matched.group(token_pos)
+            token = matched.group(token_pos+1)
             syslog.syslog("Input token: \t" + str(token.strip()))
             sub_token = crypto.encode(token.strip())
             syslog.syslog("Output token:\t" + str(sub_token))
