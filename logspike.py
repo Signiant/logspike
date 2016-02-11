@@ -49,6 +49,10 @@ def compile_patterns():
 def main():
     #Input TCP socket
     in_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    #Set socket re-use
+    in_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
     #Outgoing UDS socket
     out_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
 
