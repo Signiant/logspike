@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-import syslog
-
-import sys, os, socket, time, re, select
+import sys, os, socket, time, re, select, syslog
 
 #Contains the encode and decode methods
 import crypto
@@ -16,36 +14,34 @@ from patterns import match_patterns
 #Compiled patterns with token position
 compiled_patterns = list()
 
-#Key is loaded from a file which is defined in the config
-#cipher_key = None
-
 #Look for a pattern match, if matched find the token we want to replace and
 #encode it. Reconstruct the message and return.
 def replace(message):
-    for pattern, token_pos in compiled_patterns:
-        matched = pattern.match(message)
-        if matched:
-            rebuilt_string = ""
-            token = matched.group(token_pos+1)
-            syslog.syslog("Input token: \t" + str(token.strip()))
-            sub_token = crypto.encode(token.strip())
-            syslog.syslog("Output token:\t" + str(sub_token))
-            for index, group in enumerate(matched.groups()):
-                if index == token_pos:
-                    rebuilt_string += sub_token
-                    continue
-                rebuilt_string += group
-            return rebuilt_string
-    #If none of the patterns match, return the original message
+    try:
+        for pattern, token_pos in compiled_patterns:
+            matched = pattern.match(message)
+            if matched:
+                rebuilt_string = ""
+                token = matched.group(token_pos)
+                sub_token = crypto.encode(token.strip())
+                for index, group in enumerate(matched.groups(), start=1):
+                    if index == token_pos:
+                        rebuilt_string += sub_token
+                        continue
+                    rebuilt_string += group
+                return rebuilt_string
+        #If none of the patterns match, return the original message
+    except Exception as e:
+        syslog.syslog("Logspike Error: " + str(e))
     return message
 
 def compile_patterns():
     #This gets the pattern to match, and the token position (in regex groups)
     #to obfuscate
-    print("Searching for the following patterns:")
+    syslog.syslog("Searching for the following patterns:")
     for pattern, token_pos in match_patterns:
         #Compile the pattern and add it to the list
-        print (pattern + " @ position: " + str(token_pos))
+        syslog.syslog(pattern + " @ position: " + str(token_pos))
         compiled_pattern = re.compile(pattern, flags=(re.I | re.M))
         pattern_tuple = (compiled_pattern, token_pos)
         compiled_patterns.append(pattern_tuple)
@@ -56,9 +52,9 @@ def main():
     #Outgoing UDS socket
     out_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
 
-    print ("Starting lockspike.")
-    print ("Input address:  " + in_socket_address + ":" + str(in_socket_port))
-    print ("Output address: " + out_socket_address)
+    syslog.syslog("Logspike: Starting lockspike.")
+    syslog.syslog("Logspike: Input address:  " + in_socket_address + ":" + str(in_socket_port))
+    syslog.syslog("Logspike: Output address: " + out_socket_address)
 
     #Bind the incoming TCP socket with the specified port from the config
     in_socket.bind((in_socket_address,in_socket_port))
@@ -71,7 +67,7 @@ def main():
         #tie up resources
         time.sleep(2)
 
-        print ("Listening...")
+        syslog.syslog("Logspike: Listening...")
 
         #Accept incoming connection
         conn, addr = in_socket.accept()
@@ -90,7 +86,7 @@ def main():
 
             #If we're not ready to read, or in error
             if not ready[0] or ready[2]:
-                print "Lost connection to client"
+                syslog.syslog("Logspike: Lost connection to NXLog")
                 break
 
             #Flag to know if we need to clear the buffer or not
@@ -124,7 +120,5 @@ def main():
                 input_buffer = ""
 
 if __name__ == "__main__":
-    #with open(keyfile,'r') as f:
-    #    cipher_key = f.read()
     compile_patterns()
     main()
