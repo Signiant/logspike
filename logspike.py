@@ -42,7 +42,7 @@ def compile_patterns():
     for pattern, token_pos in match_patterns:
         #Compile the pattern and add it to the list
         syslog.syslog(pattern + " @ position: " + str(token_pos))
-        compiled_pattern = re.compile(pattern, flags=(re.I | re.M))
+        compiled_pattern = re.compile(pattern, flags=(re.M))
         pattern_tuple = (compiled_pattern, token_pos)
         compiled_patterns.append(pattern_tuple)
 
