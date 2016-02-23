@@ -22,10 +22,10 @@ def replace(message):
             matched = pattern.match(message)
             if matched:
                 rebuilt_string = ""
-                token = matched.group(token_pos)
-                sub_token = crypto.encode(token.strip())
                 for index, group in enumerate(matched.groups(), start=1):
-                    if index == token_pos:
+                    if index in token_pos:
+                        token = matched.group(index)
+                        sub_token = crypto.encode(token.strip())
                         rebuilt_string += sub_token
                         continue
                     rebuilt_string += group
@@ -41,8 +41,10 @@ def compile_patterns():
     syslog.syslog("Searching for the following patterns:")
     for pattern, token_pos in match_patterns:
         #Compile the pattern and add it to the list
-        syslog.syslog(pattern + " @ position: " + str(token_pos))
+        syslog.syslog(pattern + " @ position(s): " + str(token_pos))
         compiled_pattern = re.compile(pattern, flags=(re.M))
+        if isinstance(token_pos, (int, long)):
+            token_pos = [token_pos]
         pattern_tuple = (compiled_pattern, token_pos)
         compiled_patterns.append(pattern_tuple)
 
