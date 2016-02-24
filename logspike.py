@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, socket, time, re, select, syslog
+import sys, os, socket, time, re, select, syslog, traceback
 
 #Contains the encode and decode methods
 import crypto
@@ -32,7 +32,13 @@ def replace(message):
                 return rebuilt_string
         #If none of the patterns match, return the original message
     except Exception as e:
-        syslog.syslog("Logspike Error: " + str(e))
+        try:
+            exc_info = sys.exc_info()
+            syslog.syslog("Logspike: ERROR -------------- " + str(e))
+            syslog.syslog(traceback.print_exception(*exc_info))
+            exit(1)
+        except:
+            syslog.syslog("Logspike: Fatal Error! Could not get Traceback information.")
     return message
 
 def compile_patterns():
@@ -49,24 +55,25 @@ def compile_patterns():
         compiled_patterns.append(pattern_tuple)
 
 def main():
-    #Input TCP socket
-    in_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #Input TCP socket
+        in_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    #Set socket re-use
-    in_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #Set socket re-use
+        in_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    #Outgoing UDS socket
-    out_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        #Outgoing UDS socket
+        out_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
 
-    syslog.syslog("Logspike: Starting lockspike.")
-    syslog.syslog("Logspike: Input address:  " + in_socket_address + ":" + str(in_socket_port))
-    syslog.syslog("Logspike: Output address: " + out_socket_address)
+        syslog.syslog("Logspike: Starting lockspike.")
+        syslog.syslog("Logspike: Input address:  " + in_socket_address + ":" + str(in_socket_port))
+        syslog.syslog("Logspike: Output address: " + out_socket_address)
 
-    #Bind the incoming TCP socket with the specified port from the config
-    in_socket.bind((in_socket_address,in_socket_port))
+        #Bind the incoming TCP socket with the specified port from the config
+        in_socket.bind((in_socket_address,in_socket_port))
 
-    #Listen and allow no backlog of connections (refuse any more than the current)
-    in_socket.listen(0)
+        #Listen and allow no backlog of connections (refuse any more than the current)
+        in_socket.listen(0)
+
 
     while True:
         #Sleep for two seconds just in case we get into a loop. Don't want to
@@ -92,7 +99,7 @@ def main():
 
             #If we're not ready to read, or in error
             if not ready[0] or ready[2]:
-                syslog.syslog("Logspike: Lost connection to NXLog")
+                syslog.syslog("Logspike: Lost connection to input socket")
                 break
 
             #Flag to know if we need to clear the buffer or not
@@ -126,5 +133,14 @@ def main():
                 input_buffer = ""
 
 if __name__ == "__main__":
-    compile_patterns()
-    main()
+    try:
+        compile_patterns()
+        main()
+    except Exception as e:
+        try:
+            exc_info = sys.exc_info()
+            syslog.syslog("Logspike: ERROR -------------- " + str(e))
+            syslog.syslog(traceback.print_exception(*exc_info))
+            exit(1)
+        except:
+            syslog.syslog("Logspike: Fatal Error! Could not get Traceback information.")
