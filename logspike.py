@@ -69,8 +69,11 @@ def main():
     #Bind the incoming TCP socket with the specified port from the config
     in_socket.bind((in_socket_address,in_socket_port))
 
+    syslog.syslog("Logspike: Bound to socket.")
+
     #Listen and allow no backlog of connections (refuse any more than the current)
     in_socket.listen(0)
+    syslog.syslog("Logspike: Listening...")
 
     while True:
         #Sleep for two seconds just in case we get into a loop. Don't want to
@@ -81,6 +84,7 @@ def main():
 
         #Accept incoming connection
         conn, addr = in_socket.accept()
+        syslog.syslog("Logspike: Accepted incoming connection")
 
         #Don't allow socket to block
         conn.setblocking(0)
@@ -99,6 +103,8 @@ def main():
                 syslog.syslog("Logspike: Lost connection to input socket")
                 break
 
+            syslog.syslog("Logspike: Passed 'ready' check")
+
             #Flag to know if we need to clear the buffer or not
             clear_buffer = True
 
@@ -109,7 +115,10 @@ def main():
             input_buffer += conn.recv(buffer_size)
 
             if not input_buffer:
+                time.sleep(0.5)
                 continue
+
+            syslog.syslog("Logspike: Received Data in Buffer.")
 
             #Split the buffer into lines (keeping line breaks)
             lines = input_buffer.splitlines(True)
@@ -119,11 +128,14 @@ def main():
                 #If this line doesn't end with a new line, then we should assume
                 #that it's incomplete, and we add it to the beginning of the buffer
                 if not line.endswith("\n"):
+                    syslog.syslog("Logspike: Buffer incomplete -- waiting for more data")
                     input_buffer = line
                     clear_buffer = False
                     continue
                 #Otherwise, search for tokens to replace with encoded values
+                syslog.syslog("Logspike: Input message: " + str(line))
                 output_message = replace(line).strip()
+                syslog.syslog("Logspike: Output message: " + str(output_message))
                 #Send to output socket
                 out_socket.sendto(output_message,out_socket_address)
             if clear_buffer:
