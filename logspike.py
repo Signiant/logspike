@@ -102,9 +102,6 @@ def main():
             #Flag to know if we need to clear the buffer or not
             clear_buffer = True
 
-            #Flag to know if the
-            close_connection = True
-
             #Append to the buffer
             input_buffer += conn.recv(buffer_size)
 
@@ -133,7 +130,7 @@ if __name__ == "__main__":
     try:
         compile_patterns()
         main()
-    except Exception as e:
+    except Exception as e: # Catch all other exceptions and log them to syslog
         try:
             exc_info = sys.exc_info()
             syslog.syslog("Logspike: ERROR -------------- " + str(e))
